@@ -8,7 +8,14 @@ GOPASS_HOMEDIR="$fixture/other-config" gopass init --crypto plain --storage fs -
 printf 'fixture\n' | GOPASS_HOMEDIR="$fixture/other-config" gopass insert fixture
 export GOPASS_HOMEDIR="$fixture/config"
 gopass init --crypto plain --storage gitfs --path "$fixture/root" test >/dev/null
-git init -q --bare "$fixture/remote.git"
+export GOPASS_FIXTURE_REMOTE="$fixture/remote.git"
+git init -q --bare "$GOPASS_FIXTURE_REMOTE"
 git -C "$fixture/root" remote add origin "$fixture/remote.git"
 git -C "$fixture/root" push -q -u origin HEAD
+branch=$(git -C "$fixture/root" branch --show-current)
+git clone -q --branch "$branch" "$fixture/remote.git" "$fixture/contributor"
+cp -R "$GOPASS_HOMEDIR" "$fixture/contributor-config"
+GOPASS_HOMEDIR="$fixture/contributor-config" gopass config mounts.path "$fixture/contributor" >/dev/null
+printf 'remote fixture\n' | GOPASS_HOMEDIR="$fixture/contributor-config" gopass insert remote/sample
+git -C "$fixture/contributor" push -q origin HEAD
 cargo test -p gopass-cli --test local_store -- --ignored --test-threads=1

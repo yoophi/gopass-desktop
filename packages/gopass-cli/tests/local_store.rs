@@ -50,7 +50,16 @@ fn mounts_and_sync() {
         .list_paths()
         .unwrap()
         .contains(&"qa team/fixture".into()));
+    assert!(!cli.list_paths().unwrap().contains(&"remote/sample".into()));
+    let remote = std::path::PathBuf::from(std::env::var("GOPASS_FIXTURE_REMOTE").unwrap());
+    let offline = remote.with_extension("offline");
+    std::fs::rename(&remote, &offline).unwrap();
+    let failed_sync = cli.sync();
+    std::fs::rename(&offline, &remote).unwrap();
+    assert!(failed_sync.is_err());
     cli.sync().unwrap();
+    assert_eq!(cli.read("remote/sample").unwrap(), "remote fixture\n");
+    cli.remove("remote/sample").unwrap();
     cli.remove_mount("qa team").unwrap();
     assert!(cli.mounts().unwrap().is_empty());
     assert!(!cli

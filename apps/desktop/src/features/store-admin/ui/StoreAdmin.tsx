@@ -18,8 +18,11 @@ export function StoreAdmin() {
     try {await action();} catch(e){setStatus(String(e));} finally {setBusy(false);}
   }
   async function change(command:string,args:Record<string,string>={}) {
-    await invoke(command,args);
-    await Promise.all([refreshEntries(client),client.invalidateQueries({queryKey:["mounts"]})]);
+    try { await invoke(command,args); }
+    finally {
+      // A multi-store sync can update one mount before another remote fails.
+      await Promise.all([refreshEntries(client),client.invalidateQueries({queryKey:["mounts"]})]);
+    }
     if(command==="add_mount"){setName("");setDirectory("");}
     setStatus(command==="sync_stores"?"동기화를 완료했습니다.":"마운트 목록을 갱신했습니다.");
   }

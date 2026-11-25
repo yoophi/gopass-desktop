@@ -184,6 +184,22 @@ impl gopass_core::StoreAdmin for GopassCli {
         run(&["mounts", "remove", "--", checked_path(name)?], None).map(drop)
     }
     fn sync(&self) -> io::Result<()> {
-        run(&["sync"], None).map(drop)
+        let output = Command::new("gopass")
+            .arg("sync")
+            .stdin(Stdio::null())
+            .output()?;
+        // gopass 1.17 can return success even when an individual remote fails.
+        let diagnostics = String::from_utf8_lossy(&output.stderr);
+        if !output.status.success()
+            || diagnostics.lines().any(|line| {
+                let text = line.trim_start_matches(['❌', '⚠', '\u{fe0f}', ' ']);
+                text.to_ascii_lowercase().starts_with("failed to ")
+            })
+        {
+            return Err(io::Error::other(
+                "저장소 동기화에 실패했습니다. 원격 연결과 접근 권한을 확인하세요.",
+            ));
+        }
+        Ok(())
     }
 }
