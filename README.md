@@ -15,6 +15,19 @@ pnpm check   # TypeScript 검사, Vite 빌드, Rust 검사
 pnpm build   # 데스크톱 실행 파일 빌드
 ```
 
+### 기능 검증
+
+`pnpm test:ui`는 항목 편집과 삭제, 검색창 갱신, 키보드 탐색, 한글 조합 이벤트, 비밀번호 점검과 릴리스 안내를 검사합니다. 처음 실행할 때는 `pnpm exec playwright install chromium`으로 테스트 브라우저를 설치합니다.
+
+macOS에서 다음 명령으로 실제 gopass와의 연결을 확인할 수 있습니다. 테스트는 임시 저장소와 별도의 브라우저 프로필을 사용합니다.
+
+```sh
+scripts/test-local-store.sh
+pnpm --filter @gopass/chrome-extension build
+cargo build -p gopass-native-host
+node scripts/test-extension.mjs
+```
+
 ## 아키텍처
 
 재사용 가능한 라이브러리는 언어와 관계없이 `packages/*`에 둡니다. `packages/ui`는 공용 React 컴포넌트와 테마를 제공하고, `packages/gopass-core`는 Rust 코어를 제공합니다. 앱은 각 라이브러리의 공개 API를 사용하며 공용 패키지는 앱에 의존하지 않습니다.
@@ -45,7 +58,7 @@ node scripts/native-manifest.mjs "$HOME/Library/Application Support/Google/Chrom
 
 Windows에서는 같은 스크립트에 매니페스트를 보관할 디렉터리와 `target/release/gopass-native-host.exe`를 전달합니다. 생성된 매니페스트의 절대 경로를 `HKCU\Software\Google\Chrome\NativeMessagingHosts\dev.yoophi.gopass`의 기본 문자열 값으로 등록합니다. 확장 팝업에서 로컬 호스트로 요청할 수 있는 작업은 경로 목록 조회입니다. [Chrome Native Messaging 문서](https://developer.chrome.com/docs/extensions/develop/concepts/native-messaging)
 
-## 주요 기능 계획
+## 주요 기능
 
 화면별 완료 기준과 구현 상태는 [기능 체크리스트](FEATURES.md)에서 관리합니다.
 
@@ -64,8 +77,8 @@ Windows에서는 같은 스크립트에 매니페스트를 보관할 디렉터�
 | --- | --- |
 | Tauri 2 · Rust | 데스크톱 창, 트레이, 전역 단축키를 관리하고 로컬 gopass CLI를 호출합니다. |
 | React · TypeScript · Vite | 탐색기와 빠른 검색창을 구성하고 빌드합니다. |
-| Tailwind CSS · shadcn/ui | 검색 목록, 입력 폼, 대화상자를 구성합니다. 탐색기에는 키보드 이동과 선택을 지원하는 [Headless Tree](https://github.com/lukasbach/headless-tree)를 사용할 계획입니다. |
-| Zustand | 현재 선택, 검색어, 펼친 폴더 등 창별 화면 상태를 관리합니다. |
+| Tailwind CSS · shadcn/ui | 검색 목록, 입력 폼, 대화상자를 구성합니다. 탐색기에는 키보드 이동과 선택을 지원하는 [Headless Tree](https://github.com/lukasbach/headless-tree)를 사용합니다. |
+| Zustand | 탐색기 검색어처럼 창 안에서 공유하는 화면 상태를 관리합니다. |
 | TanStack Query (React Query) | 항목 목록, 마운트, 변경 이력을 조회하고 저장소가 바뀌면 관련 목록을 갱신합니다. |
 
 ## 구현 기준

@@ -2,11 +2,15 @@ import { test, expect } from "@playwright/test";
 
 test.beforeEach(async ({context}) => {
   await context.addInitScript(() => {
+    let disconnected = location.search === "?fixture=empty";
+    if (disconnected) localStorage.setItem("fixture.entries","{}");
     const entries = () => JSON.parse(localStorage.getItem("fixture.entries") ?? '{"work/password":"dummy","work/secret":"Secure2026!"}');
     Object.assign(window, {__TAURI_INTERNALS__: {invoke: async (command:string, args: Record<string, any> = {}) => {
       const all = entries();
       switch (command) {
-        case "list_entries": return Object.keys(all);
+        case "list_entries":
+          if (disconnected) { disconnected=false; throw new Error("disconnected fixture"); }
+          return Object.keys(all);
         case "save_entry": all[args.path]=args.value;break;
         case "remove_entry": delete all[args.path];break;
         case "read_entry": return all[args.path];
@@ -73,4 +77,37 @@ test("open a weak entry from a completed health scan and check a newer release",
   await page.getByText("설정",{exact:true}).click();await page.getByText("새 버전 확인").click();
   await expect(page.getByText("새 릴리스 v0.2.0")).toBeVisible();await page.getByText("릴리스 페이지 열기").click();
   await expect.poll(()=>page.evaluate(()=>sessionStorage.getItem("releasesOpened"))).toEqual("yes");
+});
+
+test("browse a folder by keyboard, filter it, and clear the filter", async ({page}) => {
+  await page.goto("/");
+  const folder = page.getByRole("treeitem", {name:"work", exact:true});
+  await folder.focus();
+  await folder.press("ArrowRight");
+  const entry = page.getByRole("treeitem", {name:"password", exact:true});
+  await expect(entry).toBeVisible();
+  await folder.press("ArrowDown");
+  await expect(entry).toBeFocused();
+  await page.keyboard.press("Enter");
+  await expect(page.getByRole("heading", {name:"work/password"})).toBeVisible();
+  await page.keyboard.press("ArrowLeft");
+  await expect(folder).toBeFocused();
+  await page.keyboard.press("ArrowLeft");
+  await expect(entry).toHaveCount(0);
+  const filter = page.getByRole("searchbox");
+  await filter.fill("missing");
+  await expect(page.getByText("검색 결과가 없습니다.")).toBeVisible();
+  await filter.press("Escape");
+  await expect(folder).toBeVisible();
+});
+
+test("distinguish a failed listing from an empty store and create its first entry", async ({page}) => {
+  await page.goto("/?fixture=empty");
+  await page.getByRole("button",{name:"다시 시도"}).click();
+  await expect(page.getByText("저장소가 비어 있습니다.")).toBeVisible();
+  await page.getByRole("button",{name:"새 항목"}).click();
+  await page.getByLabel("항목 경로").fill("first");
+  await page.getByLabel("원문").fill("fixture");
+  await page.getByRole("button",{name:"저장",exact:true}).click();
+  await expect(page.getByRole("treeitem",{name:"first"})).toBeVisible();
 });
