@@ -9,3 +9,11 @@ pub fn list_entries<C: EntryCatalog + ?Sized>(catalog: &C) -> Result<Vec<String>
     paths.sort_unstable();
     Ok(paths)
 }
+
+pub trait EntryStore: EntryCatalog {
+    fn read(&self, path: &str) -> Result<String, Self::Error>;
+    fn copy(&self, path: &str) -> Result<(), Self::Error>;
+    fn save(&self, path: &str, value: &str, editing: bool) -> Result<(), Self::Error>;
+    fn remove(&self, path: &str) -> Result<(), Self::Error>;
+    fn history(&self, path: &str) -> Result<Vec<[String; 3]>, Self::Error>;
+}

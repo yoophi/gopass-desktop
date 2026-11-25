@@ -7,3 +7,4 @@ export function filterEntryPaths(paths: readonly string[], term: string): readon
   const query = term.trim().toLowerCase();
   return query ? paths.filter((path) => path.toLowerCase().includes(query)) : paths;
 }
+export { generatePassword, ratePassword } from "./password";

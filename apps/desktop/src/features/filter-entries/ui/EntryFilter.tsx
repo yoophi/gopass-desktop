@@ -6,7 +6,7 @@ export function EntryFilter() {
   return (
     <label className="grid gap-2 font-medium">
       경로 검색
-      <Input type="search" value={term} onChange={(event) => setTerm(event.target.value)} />
+      <Input type="search" onKeyDown={(event) => { if (event.key === "Escape") setTerm(""); }} value={term} onChange={(event) => setTerm(event.target.value)} />
     </label>
   );
 }
