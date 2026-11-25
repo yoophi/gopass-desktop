@@ -2,7 +2,7 @@
 
 [gopass-ui](https://github.com/codecentric/gopass-ui)의 검색·관리 기능을 Tauri와 React로 다시 만드는 데스크톱 프로젝트입니다. 다른 앱에서 작업하던 중 키보드로 비밀값을 찾아 복사하고, 탐색기에서 로컬 [gopass](https://github.com/gopasspw/gopass) 저장소를 관리하는 두 가지 흐름에 집중합니다.
 
-현재 구현한 기능은 로컬 저장소의 항목 경로 조회와 검색입니다. 앱은 시작할 때 `gopass list --flat`으로 경로를 읽고, 입력한 검색어로 목록을 좁힙니다.
+데스크톱 앱에서 경로를 검색하고 비밀 항목을 생성·수정·복사할 수 있습니다. 별도 Chrome 확장 팝업에서도 로컬 저장소의 항목 경로를 검색할 수 있습니다.
 
 ## 개발 환경
 
@@ -29,9 +29,21 @@ pnpm build   # 데스크톱 실행 파일 빌드
 | --- | --- | --- |
 | `@gopass/entries` | 데스크톱 WebView, 확장 팝업·서비스 워커 | 항목 경로 조회 계약(`EntryCatalog`)과 경로 검색. 브라우저 API나 React에 의존하지 않습니다. |
 | `@gopass/ui` | 데스크톱 WebView, 확장 팝업 | React 입력 컴포넌트와 Tailwind 테마 |
-| `gopass-core`, `gopass-cli` | 데스크톱 프로세스, 향후 로컬 네이티브 호스트 | 항목 조회 유스케이스와 로컬 gopass 실행 |
+| `gopass-core`, `gopass-cli` | 데스크톱 프로세스, Chrome 확장용 로컬 네이티브 호스트 | 항목 조회 유스케이스와 로컬 gopass 실행 |
 
-데스크톱은 `EntryCatalog.listPaths()`를 Tauri IPC로 구현합니다. Chrome 확장을 추가할 때는 확장 쪽에서 같은 계약을 메시징으로 구현하고, 로컬 호스트에서 Rust 패키지를 재사용할 수 있습니다. 창 상태, 권한, 메시지 처리는 각 앱이 소유합니다.
+데스크톱은 `EntryCatalog.listPaths()`를 Tauri IPC로 구현합니다. Chrome 확장은 같은 계약을 Native Messaging으로 구현하고, 로컬 호스트에서 Rust 패키지를 재사용합니다. 창 상태, 권한, 메시지 처리는 각 앱이 소유합니다.
+
+### Chrome 확장 설치
+
+루트에서 `pnpm build:extension`을 실행합니다. Chrome의 `chrome://extensions`에서 개발자 모드를 켜고 **압축해제된 확장 프로그램을 로드**로 `apps/chrome-extension/dist`를 선택합니다.
+
+macOS의 Google Chrome에는 다음 명령으로 로컬 호스트를 등록합니다. Linux에서는 첫 번째 경로로 `~/.config/google-chrome/NativeMessagingHosts`를 사용합니다. 등록 후에는 실행 파일이 해당 경로에 있어야 합니다.
+
+```sh
+node scripts/native-manifest.mjs "$HOME/Library/Application Support/Google/Chrome/NativeMessagingHosts" target/release/gopass-native-host
+```
+
+Windows에서는 같은 스크립트에 매니페스트를 보관할 디렉터리와 `target/release/gopass-native-host.exe`를 전달합니다. 생성된 매니페스트의 절대 경로를 `HKCU\Software\Google\Chrome\NativeMessagingHosts\dev.yoophi.gopass`의 기본 문자열 값으로 등록합니다. 확장 팝업에서 로컬 호스트로 요청할 수 있는 작업은 경로 목록 조회입니다. [Chrome Native Messaging 문서](https://developer.chrome.com/docs/extensions/develop/concepts/native-messaging)
 
 ## 주요 기능 계획
 

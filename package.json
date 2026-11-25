@@ -5,8 +5,9 @@
   "scripts": {
     "dev": "pnpm --filter @gopass/desktop tauri dev",
     "build": "pnpm --filter @gopass/desktop tauri build --no-bundle",
-    "check": "pnpm --filter @gopass/desktop build && cargo check --workspace",
-    "test:ui": "playwright test"
+    "check": "pnpm --filter @gopass/desktop build && pnpm --filter @gopass/chrome-extension build && cargo check --workspace",
+    "test:ui": "playwright test",
+    "build:extension": "pnpm --filter @gopass/chrome-extension build && cargo build --release -p gopass-native-host"
   },
   "devDependencies": {
     "@playwright/test": "1.58.2"

@@ -1,0 +1,12 @@
+{
+  "manifest_version": 3,
+  "name": "gopass 경로 검색",
+  "version": "0.1.0",
+  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAyXMPfsHrCNHVtpp3W2KLzapwSrZYJz4sIfucRXceBEvpKPt57GwxEx2eCtgtlf6ESbrvJ8e9POzPHwJQ/7Dd/YVCLirXOOJVrgpinZ6oNhoX0eyRhpNYxSxYTO7ym5y0mANtugBJdj7+etsFJ+CK6Gj6UlHIbclQ3nec3KhRQ2WgW03ZuHH4vXXGv4B4HN6gr57JQs3UqzGVAliEK6I6ufdUmLZl19cDw2wHlD7TBhTFU09m/VVY5bB1HP9o+/6QNEX+N7aIVkOl10heBi8s6FRviJXXxypL4xnC5/6VVUgUVe8elJREoPcWadXSNekUM96cISSLLMTaiJ3hNJSvrwIDAQAB",
+  "permissions": [
+    "nativeMessaging"
+  ],
+  "action": {
+    "default_popup": "index.html"
+  }
+}

@@ -1,0 +1,10 @@
+[package]
+name = "gopass-native-host"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[dependencies]
+gopass-cli = { path = "../../packages/gopass-cli" }
+gopass-core = { path = "../../packages/gopass-core" }
+serde_json = "1"
