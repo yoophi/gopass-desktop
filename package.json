@@ -1,0 +1,10 @@
+{
+  "name": "gopass-desktop-workspace",
+  "private": true,
+  "packageManager": "pnpm@9.15.5",
+  "scripts": {
+    "dev": "pnpm --filter @gopass/desktop tauri dev",
+    "build": "pnpm --filter @gopass/desktop tauri build --no-bundle",
+    "check": "pnpm --filter @gopass/desktop build && cargo check --workspace"
+  }
+}

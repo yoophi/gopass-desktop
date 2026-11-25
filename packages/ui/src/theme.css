@@ -1,0 +1,7 @@
+@source "./components";
+@theme inline {
+  --color-input: #cbd5cf;
+  --color-ring: #21705b;
+  --color-muted-foreground: #485c53;
+  --color-destructive: #a32929;
+}

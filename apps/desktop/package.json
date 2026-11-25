@@ -1,0 +1,31 @@
+{
+  "name": "@gopass/desktop",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "tauri": "tauri"
+  },
+  "dependencies": {
+    "@tanstack/react-query": "5",
+    "@tauri-apps/api": "2",
+    "react": "19",
+    "react-dom": "19",
+    "zustand": "5",
+    "@gopass/entries": "workspace:*",
+    "@gopass/ui": "workspace:*"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "4",
+    "@tauri-apps/cli": "2",
+    "@types/node": "^26.6.10",
+    "@types/react": "19",
+    "@types/react-dom": "19",
+    "@vitejs/plugin-react": "5",
+    "tailwindcss": "4",
+    "typescript": "5",
+    "vite": "7"
+  }
+}
