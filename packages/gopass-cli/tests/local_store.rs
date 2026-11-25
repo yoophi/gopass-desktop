@@ -21,3 +21,40 @@ fn multiline_entry_lifecycle() {
     cli.remove(path).unwrap();
     assert!(cli.list_paths().unwrap().is_empty());
 }
+
+#[test]
+#[ignore = "requires two isolated disposable stores and an initialized git remote"]
+fn mounts_and_sync() {
+    use gopass_core::StoreAdmin;
+    let cli = GopassCli;
+    assert_eq!(std::env::var("GOPASS_FIXTURE").as_deref(), Ok("disposable"));
+    let dir = std::env::var("GOPASS_FIXTURE_MOUNT").unwrap();
+    cli.add_mount("qa team", &dir).unwrap();
+    assert!(cli
+        .mounts()
+        .unwrap()
+        .iter()
+        .any(|[name, path]| name == "qa team"
+            && std::fs::canonicalize(path).unwrap() == std::fs::canonicalize(&dir).unwrap()));
+    assert!(cli
+        .add_mount("qa team", &dir)
+        .unwrap_err()
+        .to_string()
+        .contains("이름"));
+    assert!(cli
+        .add_mount("other", &dir)
+        .unwrap_err()
+        .to_string()
+        .contains("경로"));
+    assert!(cli
+        .list_paths()
+        .unwrap()
+        .contains(&"qa team/fixture".into()));
+    cli.sync().unwrap();
+    cli.remove_mount("qa team").unwrap();
+    assert!(cli.mounts().unwrap().is_empty());
+    assert!(!cli
+        .list_paths()
+        .unwrap()
+        .contains(&"qa team/fixture".into()));
+}

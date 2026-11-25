@@ -1,3 +1,4 @@
+import { StoreAdmin } from "@/features/store-admin";
 import { DesktopSettings } from "@/features/desktop-settings";
 import { invoke } from "@tauri-apps/api/core";
 import { EntryTree } from "@/features/browse-entries";
@@ -21,6 +22,7 @@ export function ExplorerPage() {
       <nav><button onClick={() => invoke("open_search").catch(e => setMenuError(String(e)))}>빠른 검색</button></nav>
       {menuError && <p role="alert">{menuError}</p>}
       <DesktopSettings />
+      <StoreAdmin />
       <button onClick={() => setSelection(null)}>새 항목</button>
       {selection !== undefined && <EntryEditor key={JSON.stringify(selection)} path={selection} close={() => setSelection(undefined)} saved={setSelection} />}
       <EntryFilter />

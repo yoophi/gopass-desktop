@@ -1,7 +1,7 @@
-use gopass_core::EntryStore;
+use gopass_core::StoreAdmin;
 use std::{io, sync::Arc};
 
-pub type Catalog = Arc<dyn EntryStore<Error = io::Error> + Send + Sync>;
+pub type Catalog = Arc<dyn StoreAdmin<Error = io::Error> + Send + Sync>;
 
 #[tauri::command]
 pub async fn list_entries(catalog: tauri::State<'_, Catalog>) -> Result<Vec<String>, String> {
@@ -54,4 +54,57 @@ pub async fn entry_history(
     path: String,
 ) -> Result<Vec<[String; 3]>, String> {
     call(catalog, move |s| s.history(&path)).await
+}
+
+#[tauri::command]
+pub async fn list_mounts(catalog: tauri::State<'_, Catalog>) -> Result<Vec<[String; 2]>, String> {
+    call(catalog, |s| s.mounts()).await
+}
+#[tauri::command]
+pub async fn add_mount(
+    catalog: tauri::State<'_, Catalog>,
+    name: String,
+    directory: String,
+) -> Result<(), String> {
+    call(catalog, move |s| s.add_mount(&name, &directory)).await
+}
+#[tauri::command]
+pub async fn remove_mount(catalog: tauri::State<'_, Catalog>, name: String) -> Result<(), String> {
+    call(catalog, move |s| s.remove_mount(&name)).await
+}
+#[tauri::command]
+pub async fn sync_stores(catalog: tauri::State<'_, Catalog>) -> Result<(), String> {
+    call(catalog, |s| s.sync()).await
+}
+#[tauri::command]
+pub async fn diagnose(catalog: tauri::State<'_, Catalog>) -> Result<Vec<[String; 2]>, String> {
+    call(catalog, |s| {
+        let mut stages = Vec::new();
+        match s.version() {
+            Ok(version) => stages.push([
+                "CLI 실행".into(),
+                version.lines().next().unwrap_or("성공").into(),
+            ]),
+            Err(e) => {
+                stages.push(["CLI 실행 실패".into(), e.to_string()]);
+                return Ok(stages);
+            }
+        }
+        match s.list_paths() {
+            Err(e) => stages.push(["저장소 접근 실패".into(), e.to_string()]),
+            Ok(paths) => {
+                stages.push(["저장소 접근".into(), format!("항목 {}개", paths.len())]);
+                if let Some(path) = paths.first() {
+                    match s.read(path) {
+                        Ok(_) => stages.push(["복호화".into(), "성공".into()]),
+                        Err(e) => stages.push(["복호화 실패 또는 인증 취소".into(), e.to_string()]),
+                    }
+                } else {
+                    stages.push(["복호화".into(), "빈 저장소 · 확인할 항목 없음".into()]);
+                }
+            }
+        }
+        Ok(stages)
+    })
+    .await
 }

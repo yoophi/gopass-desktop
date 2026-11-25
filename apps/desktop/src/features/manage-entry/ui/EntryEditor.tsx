@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { generatePassword, ratePassword } from "@gopass/entries";
 import { Input } from "@gopass/ui/components/input";
-import { copyEntry, entryHistory, readEntry, removeEntry, saveEntry } from "@/entities/entry";
+import { refreshEntries, copyEntry, entryHistory, readEntry, removeEntry, saveEntry } from "@/entities/entry";
 import { passwordLength } from "@/shared/settings/passwordLength";
 
 export function EntryEditor({ path, close, saved }: {
@@ -48,10 +48,9 @@ export function EntryEditor({ path, close, saved }: {
     if (revision.current === request && !document.hidden) { setValue(text); setMode(next); }
   }
   async function refresh() {
-    await client.invalidateQueries({queryKey:["entries"]});
+    await refreshEntries(client);
     await client.invalidateQueries({queryKey:["history",name]});
-    const channel = new BroadcastChannel("entries-changed");
-    channel.postMessage("refresh"); channel.close();
+
   }
   return <section className="grid gap-3 rounded border border-input bg-white p-5">
     <header className="flex justify-between gap-2"><h2>{creating ? "새 항목" : path}</h2><button onClick={close}>닫기</button></header>

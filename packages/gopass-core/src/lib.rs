@@ -17,3 +17,11 @@ pub trait EntryStore: EntryCatalog {
     fn remove(&self, path: &str) -> Result<(), Self::Error>;
     fn history(&self, path: &str) -> Result<Vec<[String; 3]>, Self::Error>;
 }
+
+pub trait StoreAdmin: EntryStore {
+    fn version(&self) -> Result<String, Self::Error>;
+    fn mounts(&self) -> Result<Vec<[String; 2]>, Self::Error>;
+    fn add_mount(&self, name: &str, directory: &str) -> Result<(), Self::Error>;
+    fn remove_mount(&self, name: &str) -> Result<(), Self::Error>;
+    fn sync(&self) -> Result<(), Self::Error>;
+}
