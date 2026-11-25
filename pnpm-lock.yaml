@@ -16,6 +16,12 @@ importers:
       '@gopass/ui':
         specifier: workspace:*
         version: link:../../packages/ui
+      '@headless-tree/core':
+        specifier: ^1.8.1
+        version: 1.8.1
+      '@headless-tree/react':
+        specifier: ^1.8.1
+        version: 1.8.1(@headless-tree/core@1.8.1)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       '@tanstack/react-query':
         specifier: '5'
         version: 5.108.4(@types/react@19.3.3)(react@19.3.1)
@@ -318,6 +324,16 @@ packages:
     engines: {node: '>=18'}
     cpu: [x64]
     os: [win32]
+
+  '@headless-tree/core@1.8.1':
+    resolution: {integrity: sha512-SdHt9wuKpdenb4HT3d07alT3lor/8qStUNnCx1uw9z4ATghfnpC6JkpBeziWWtB7r/d0DC04oVcrVS/aq17h2Q==}
+
+  '@headless-tree/react@1.8.1':
+    resolution: {integrity: sha512-ascPdEgb/oDpbPJond1ptBkXQw3BlYtlOR3v+VO2J+YiR+Iqq3evaKJoea7+hFebfjBCoUaCYuKF8z4iA1ONjg==}
+    peerDependencies:
+      '@headless-tree/core': '*'
+      react: '*'
+      react-dom: '*'
 
   '@jridgewell/gen-mapping@0.3.13':
     resolution: {integrity: sha512-2kkt/7niJ6MgEPxF0bYdQ6etZaA+fQvDcLKckhy1yIQOzaoKjBBjSj63/aLVjYE3qhRt5dvM+uUyfCg6UKCBbA==}
@@ -1173,6 +1189,14 @@ snapshots:
 
   '@esbuild/win32-x64@0.28.2':
     optional: true
+
+  '@headless-tree/core@1.8.1': {}
+
+  '@headless-tree/react@1.8.1(@headless-tree/core@1.8.1)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)':
+    dependencies:
+      '@headless-tree/core': 1.8.1
+      react: 19.3.1
+      react-dom: 19.3.1(react@19.3.1)
 
   '@jridgewell/gen-mapping@0.3.13':
     dependencies:

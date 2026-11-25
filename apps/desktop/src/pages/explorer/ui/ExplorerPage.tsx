@@ -1,3 +1,4 @@
+import { EntryTree } from "@/features/browse-entries";
 import { useState } from "react";
 import { EntryEditor } from "@/features/manage-entry";
 import { filterEntryPaths } from "@gopass/entries";
@@ -26,7 +27,7 @@ export function ExplorerPage() {
       )}
       {paths?.length === 0 && <p>{entries.data?.length ? "검색 결과가 없습니다." : "저장소가 비어 있습니다."}</p>}
       {paths && paths.length > 0 && (
-        <ul className="divide-y divide-input">{paths.map((path) => <li key={path} className="py-2"><button onClick={() => setSelection(path)}>{path}</button></li>)}</ul>
+        <EntryTree key={JSON.stringify([!!term, paths])} paths={paths} searching={!!term} open={setSelection} />
       )}
     </main>
   );
