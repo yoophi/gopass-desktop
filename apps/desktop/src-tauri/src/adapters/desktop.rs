@@ -1,3 +1,5 @@
+mod focus;
+
 use serde_json::{json, Value};
 use std::{fs, path::PathBuf, sync::Mutex};
 use tauri::{
@@ -14,8 +16,7 @@ pub const DEFAULT_SHORTCUT: &str = "CommandOrControl+Shift+P";
 pub struct DesktopState {
     active_shortcut: Mutex<Option<Shortcut>>,
     startup_error: Mutex<Option<String>>,
-    #[cfg(target_os = "macos")]
-    previous_app: Mutex<Option<i32>>,
+    previous_app: Mutex<Option<focus::Target>>,
 }
 
 fn shortcut_file(app: &AppHandle) -> Result<PathBuf, String> {
@@ -28,13 +29,14 @@ fn shortcut_file(app: &AppHandle) -> Result<PathBuf, String> {
 #[tauri::command]
 pub async fn open_search(app: AppHandle) -> Result<(), String> {
     let existing = app.get_webview_window("search");
-    #[cfg(target_os = "macos")]
-    {
-        let front = objc2_app_kit::NSWorkspace::sharedWorkspace()
-            .frontmostApplication()
-            .map(|app| app.processIdentifier());
-        if existing.is_none() || front != Some(std::process::id() as i32) {
-            *app.state::<DesktopState>().previous_app.lock().unwrap() = front;
+    let (sender, mut receiver) = tauri::async_runtime::channel(1);
+    app.run_on_main_thread(move || {
+        let _ = sender.try_send(focus::Target::current());
+    })
+    .map_err(|e| e.to_string())?;
+    if let Some(front) = receiver.recv().await.flatten() {
+        if existing.is_none() || !front.belongs_to_desktop() {
+            *app.state::<DesktopState>().previous_app.lock().unwrap() = Some(front);
         }
     }
     #[cfg(target_os = "macos")]
@@ -65,36 +67,15 @@ pub async fn close_search(app: AppHandle) -> Result<(), String> {
     if let Some(window) = app.get_webview_window("search") {
         window.destroy().map_err(|e| e.to_string())?;
     }
-    #[cfg(target_os = "macos")]
-    if let Some(pid) = app
+    if let Some(previous) = app
         .state::<DesktopState>()
         .previous_app
         .lock()
         .unwrap()
         .take()
     {
-        app.run_on_main_thread(move || {
-            use objc2_app_kit::{
-                NSApplication, NSApplicationActivationOptions, NSRunningApplication,
-            };
-            let Some(previous) = NSRunningApplication::runningApplicationWithProcessIdentifier(pid)
-            else {
-                return;
-            };
-            if objc2::available!(macos = 14.0) {
-                let app = NSApplication::sharedApplication(objc2::MainThreadMarker::new().unwrap());
-                app.yieldActivationToApplication(&previous);
-                previous.activateFromApplication_options(
-                    &NSRunningApplication::currentApplication(),
-                    NSApplicationActivationOptions::empty(),
-                );
-            } else {
-                #[allow(deprecated)]
-                previous
-                    .activateWithOptions(NSApplicationActivationOptions::ActivateIgnoringOtherApps);
-            }
-        })
-        .map_err(|e| e.to_string())?;
+        app.run_on_main_thread(move || previous.restore())
+            .map_err(|e| e.to_string())?;
     }
     Ok(())
 }
