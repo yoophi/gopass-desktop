@@ -6,15 +6,6 @@ fn main() {
     let catalog: adapters::commands::Catalog = std::sync::Arc::new(gopass_cli::GopassCli);
     use adapters::desktop;
     tauri::Builder::default()
-        .plugin(
-            tauri_plugin_global_shortcut::Builder::new()
-                .with_handler(|app, _, event| {
-                    if event.state == tauri_plugin_global_shortcut::ShortcutState::Pressed {
-                        tauri::async_runtime::spawn(desktop::open_search(app.clone()));
-                    }
-                })
-                .build(),
-        )
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_autostart::Builder::new().build())
         .manage(desktop::DesktopState::default())

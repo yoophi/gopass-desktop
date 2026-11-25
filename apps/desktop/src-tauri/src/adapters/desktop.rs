@@ -1,10 +1,12 @@
 use serde_json::{json, Value};
 use std::{fs, path::PathBuf, sync::Mutex};
 use tauri::{
-    menu::MenuBuilder, tray::TrayIconBuilder, AppHandle, Manager, WebviewUrl, WebviewWindowBuilder,
+    menu::{Menu, MenuBuilder, SubmenuBuilder},
+    tray::TrayIconBuilder,
+    AppHandle, Manager, WebviewUrl, WebviewWindowBuilder,
 };
 use tauri_plugin_autostart::ManagerExt;
-use tauri_plugin_global_shortcut::{GlobalShortcutExt, Shortcut};
+use tauri_plugin_global_shortcut::{GlobalShortcut, Shortcut, ShortcutState};
 
 pub const DEFAULT_SHORTCUT: &str = "CommandOrControl+Shift+P";
 
@@ -25,15 +27,24 @@ fn shortcut_file(app: &AppHandle) -> Result<PathBuf, String> {
 
 #[tauri::command]
 pub async fn open_search(app: AppHandle) -> Result<(), String> {
-    if let Some(window) = app.get_webview_window("search") {
-        window.set_focus().map_err(|e| e.to_string())?;
-        return Ok(());
-    }
+    let existing = app.get_webview_window("search");
     #[cfg(target_os = "macos")]
     {
-        let front = objc2_app_kit::NSWorkspace::sharedWorkspace().frontmostApplication();
-        *app.state::<DesktopState>().previous_app.lock().unwrap() =
-            front.map(|app| app.processIdentifier());
+        let front = objc2_app_kit::NSWorkspace::sharedWorkspace()
+            .frontmostApplication()
+            .map(|app| app.processIdentifier());
+        if existing.is_none() || front != Some(std::process::id() as i32) {
+            *app.state::<DesktopState>().previous_app.lock().unwrap() = front;
+        }
+    }
+    #[cfg(target_os = "macos")]
+    app.show().map_err(|e| e.to_string())?;
+    if let Some(window) = existing {
+        window
+            .show()
+            .and_then(|_| window.set_focus())
+            .map_err(|e| e.to_string())?;
+        return Ok(());
     }
     WebviewWindowBuilder::new(
         &app,
@@ -62,14 +73,28 @@ pub async fn close_search(app: AppHandle) -> Result<(), String> {
         .unwrap()
         .take()
     {
-        if let Some(previous) =
-            objc2_app_kit::NSRunningApplication::runningApplicationWithProcessIdentifier(pid)
-        {
-            #[allow(deprecated)]
-            previous.activateWithOptions(
-                objc2_app_kit::NSApplicationActivationOptions::ActivateIgnoringOtherApps,
-            );
-        }
+        app.run_on_main_thread(move || {
+            use objc2_app_kit::{
+                NSApplication, NSApplicationActivationOptions, NSRunningApplication,
+            };
+            let Some(previous) = NSRunningApplication::runningApplicationWithProcessIdentifier(pid)
+            else {
+                return;
+            };
+            if objc2::available!(macos = 14.0) {
+                let app = NSApplication::sharedApplication(objc2::MainThreadMarker::new().unwrap());
+                app.yieldActivationToApplication(&previous);
+                previous.activateFromApplication_options(
+                    &NSRunningApplication::currentApplication(),
+                    NSApplicationActivationOptions::empty(),
+                );
+            } else {
+                #[allow(deprecated)]
+                previous
+                    .activateWithOptions(NSApplicationActivationOptions::ActivateIgnoringOtherApps);
+            }
+        })
+        .map_err(|e| e.to_string())?;
     }
     Ok(())
 }
@@ -82,21 +107,20 @@ fn install_shortcut(app: &AppHandle, value: &str, persist: bool) -> Result<(), S
         return Ok(());
     }
     let file = shortcut_file(app)?;
-    app.global_shortcut()
-        .register(next)
-        .map_err(|e| e.to_string())?;
+    let shortcuts = app
+        .try_state::<GlobalShortcut<tauri::Wry>>()
+        .ok_or_else(|| "이 환경에서 전역 단축키를 사용할 수 없습니다.".to_string())?;
+    shortcuts.register(next).map_err(|e| e.to_string())?;
     if persist {
         if let Err(e) =
             fs::create_dir_all(file.parent().unwrap()).and_then(|_| fs::write(&file, value))
         {
-            let _ = app.global_shortcut().unregister(next);
+            let _ = shortcuts.unregister(next);
             return Err(e.to_string());
         }
     }
     if let Some(old) = *active {
-        app.global_shortcut()
-            .unregister(old)
-            .map_err(|e| e.to_string())?;
+        shortcuts.unregister(old).map_err(|e| e.to_string())?;
     }
     *active = Some(next);
     *state.startup_error.lock().unwrap() = None;
@@ -136,7 +160,18 @@ pub fn setup(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
         .ok()
         .and_then(|p| fs::read_to_string(p).ok())
         .unwrap_or_else(|| DEFAULT_SHORTCUT.into());
-    if let Err(e) = install_shortcut(handle, &shortcut, false) {
+    let plugin = tauri_plugin_global_shortcut::Builder::new()
+        .with_handler(|app, _, event| {
+            if event.state == ShortcutState::Pressed {
+                tauri::async_runtime::spawn(open_search(app.clone()));
+            }
+        })
+        .build();
+    let registration = handle
+        .plugin(plugin)
+        .map_err(|e| e.to_string())
+        .and_then(|_| install_shortcut(handle, &shortcut, false));
+    if let Err(e) = registration {
         *app.state::<DesktopState>().startup_error.lock().unwrap() = Some(e);
     }
     let menu = MenuBuilder::new(app)
@@ -145,12 +180,20 @@ pub fn setup(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
         .separator()
         .text("exit", "종료")
         .build()?;
-    let mut tray = TrayIconBuilder::new().tooltip("gopass-desktop").menu(&menu);
-    if let Some(icon) = app.default_window_icon() {
-        tray = tray.icon(icon.clone());
-    }
-    tray.on_menu_event(|app, event| match event.id().as_ref() {
+    let navigation = SubmenuBuilder::new(app, "저장소")
+        .text("explorer", "탐색기")
+        .text("search", "빠른 검색")
+        .build()?;
+    let app_menu = match app.menu() {
+        Some(menu) => menu,
+        None => Menu::default(handle)?,
+    };
+    app_menu.append(&navigation)?;
+    app.set_menu(app_menu)?;
+    app.on_menu_event(|app, event| match event.id().as_ref() {
         "explorer" => {
+            #[cfg(target_os = "macos")]
+            let _ = app.show();
             if let Some(window) = app.get_webview_window("main") {
                 let _ = window.unminimize();
                 let _ = window.show();
@@ -162,8 +205,26 @@ pub fn setup(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
         }
         "exit" => app.exit(0),
         _ => (),
-    })
-    .build(app)?;
+    });
+    let mut tray = TrayIconBuilder::with_id("desktop")
+        .tooltip("gopass-desktop")
+        .menu(&menu);
+    if let Some(icon) = app.default_window_icon() {
+        tray = tray.icon(icon.clone());
+    }
+    let tray = tray.build(app);
+    if tray.is_ok() {
+        if let Some(main) = app.get_webview_window("main") {
+            let window = main.clone();
+            main.on_window_event(move |event| {
+                if let tauri::WindowEvent::CloseRequested { api, .. } = event {
+                    api.prevent_close();
+                    let _ = window.eval("window.dispatchEvent(new Event('pagehide'))");
+                    let _ = window.hide();
+                }
+            });
+        }
+    }
     Ok(())
 }
 

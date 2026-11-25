@@ -17,7 +17,12 @@ export function QuickSearch() {
   const terms = searchTerms(query);
   const results = matchPaths(entries.data ?? [], terms).slice(0, 15);
   const current = Math.min(index, Math.max(0, results.length - 1));
-  useEffect(() => { input.current?.focus(); }, []);
+  useEffect(() => {
+    const focus = () => input.current?.focus();
+    focus();
+    window.addEventListener("focus", focus);
+    return () => window.removeEventListener("focus", focus);
+  }, []);
   useEffect(() => { document.getElementById("row-"+current)?.scrollIntoView({block:"nearest"}); }, [current]);
   async function close() {
     try { await invoke("close_search"); } catch (e) { setError(String(e)); }

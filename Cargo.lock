@@ -1470,6 +1470,7 @@ version = "0.1.0"
 dependencies = [
  "gopass-cli",
  "gopass-core",
+ "objc2",
  "objc2-app-kit",
  "serde_json",
  "tauri",
