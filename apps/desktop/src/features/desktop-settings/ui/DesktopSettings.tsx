@@ -1,3 +1,4 @@
+import { ReleaseCheck } from "./ReleaseCheck";
 import { useEffect, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { Input } from "@gopass/ui/components/input";
@@ -29,7 +30,7 @@ export function DesktopSettings() {
       {settings?.error && <p role="alert">단축키 등록 실패 · {settings.error}. 메뉴에서 빠른 검색을 열 수 있습니다.</p>}
       {settings && <label><input type="checkbox" checked={settings.autostart===true} disabled={settings.autostart===null}
         onChange={e=>void run(()=>invoke("set_autostart",{enabled:e.target.checked}))} /> 로그인 시 자동 시작</label>}
-      {settings && <p>설치 버전 {settings.version}</p>}
+      {settings && <ReleaseCheck installed={settings.version} />}
       {message && <p role="status">{message}</p>}
     </div>
   </details>;

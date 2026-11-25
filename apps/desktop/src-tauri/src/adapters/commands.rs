@@ -108,3 +108,12 @@ pub async fn diagnose(catalog: tauri::State<'_, Catalog>) -> Result<Vec<[String;
     })
     .await
 }
+
+#[tauri::command]
+pub async fn score_entry(catalog: tauri::State<'_, Catalog>, path: String) -> Result<u8, String> {
+    call(catalog, move |s| {
+        s.read(&path)
+            .map(|entry| gopass_core::health::password_score(&entry))
+    })
+    .await
+}

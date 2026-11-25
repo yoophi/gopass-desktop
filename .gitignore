@@ -3,3 +3,6 @@ dist/
 target/
 apps/desktop/src-tauri/gen/
 .DS_Store
+
+/test-results/
+/playwright-report/

@@ -166,3 +166,14 @@ pub fn setup(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
     .build(app)?;
     Ok(())
 }
+
+#[tauri::command]
+pub fn open_releases(app: AppHandle) -> Result<(), String> {
+    use tauri_plugin_opener::OpenerExt;
+    app.opener()
+        .open_url(
+            "https://github.com/yoophi/gopass-desktop/releases/latest",
+            None::<&str>,
+        )
+        .map_err(|e| e.to_string())
+}

@@ -15,6 +15,7 @@ fn main() {
                 })
                 .build(),
         )
+        .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_autostart::Builder::new().build())
         .manage(desktop::DesktopState::default())
         .setup(desktop::setup)
@@ -31,10 +32,12 @@ fn main() {
             adapters::commands::remove_mount,
             adapters::commands::sync_stores,
             adapters::commands::diagnose,
+            adapters::commands::score_entry,
             desktop::open_search,
             desktop::close_search,
             desktop::desktop_settings,
             desktop::set_search_shortcut,
+            desktop::open_releases,
             desktop::set_autostart
         ])
         .run(tauri::generate_context!())

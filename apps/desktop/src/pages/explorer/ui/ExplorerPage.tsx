@@ -1,3 +1,4 @@
+import { PasswordHealth } from "@/features/password-health";
 import { StoreAdmin } from "@/features/store-admin";
 import { DesktopSettings } from "@/features/desktop-settings";
 import { invoke } from "@tauri-apps/api/core";
@@ -23,6 +24,7 @@ export function ExplorerPage() {
       {menuError && <p role="alert">{menuError}</p>}
       <DesktopSettings />
       <StoreAdmin />
+      <PasswordHealth paths={entries.data ?? []} open={setSelection} />
       <button onClick={() => setSelection(null)}>새 항목</button>
       {selection !== undefined && <EntryEditor key={JSON.stringify(selection)} path={selection} close={() => setSelection(undefined)} saved={setSelection} />}
       <EntryFilter />

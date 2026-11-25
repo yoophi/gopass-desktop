@@ -5,6 +5,10 @@
   "scripts": {
     "dev": "pnpm --filter @gopass/desktop tauri dev",
     "build": "pnpm --filter @gopass/desktop tauri build --no-bundle",
-    "check": "pnpm --filter @gopass/desktop build && cargo check --workspace"
+    "check": "pnpm --filter @gopass/desktop build && cargo check --workspace",
+    "test:ui": "playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.58.2"
   }
 }

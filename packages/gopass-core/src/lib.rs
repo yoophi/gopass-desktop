@@ -25,3 +25,4 @@ pub trait StoreAdmin: EntryStore {
     fn remove_mount(&self, name: &str) -> Result<(), Self::Error>;
     fn sync(&self) -> Result<(), Self::Error>;
 }
+pub mod health;
