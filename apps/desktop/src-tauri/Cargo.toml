@@ -10,7 +10,13 @@ tauri-build = { version = "2", features = [] }
 [dependencies]
 gopass-cli = { path = "../../../packages/gopass-cli" }
 gopass-core = { path = "../../../packages/gopass-core" }
-tauri = { version = "2", features = [] }
+serde_json = "1"
+tauri = { version = "2", features = ["tray-icon"] }
+tauri-plugin-autostart = "2"
+tauri-plugin-global-shortcut = "2"
 
 [features]
 custom-protocol = ["tauri/custom-protocol"]
+
+[target.'cfg(target_os = "macos")'.dependencies]
+objc2-app-kit = { version = "0.3", default-features = false, features = ["NSWorkspace", "NSRunningApplication", "libc"] }

@@ -1,3 +1,5 @@
+import { DesktopSettings } from "@/features/desktop-settings";
+import { invoke } from "@tauri-apps/api/core";
 import { EntryTree } from "@/features/browse-entries";
 import { useState } from "react";
 import { EntryEditor } from "@/features/manage-entry";
@@ -8,6 +10,7 @@ import { EntryFilter, useEntryFilter } from "@/features/filter-entries";
 
 export function ExplorerPage() {
   const [selection, setSelection] = useState<string | null | undefined>();
+  const [menuError, setMenuError] = useState("");
   const entries = useQuery(entryListOptions);
   const term = useEntryFilter((state) => state.term);
   const paths = entries.data && filterEntryPaths(entries.data, term);
@@ -15,6 +18,9 @@ export function ExplorerPage() {
   return (
     <main className="mx-auto grid max-w-3xl gap-6 p-8">
       <h1 className="text-3xl font-semibold">저장소 탐색기</h1>
+      <nav><button onClick={() => invoke("open_search").catch(e => setMenuError(String(e)))}>빠른 검색</button></nav>
+      {menuError && <p role="alert">{menuError}</p>}
+      <DesktopSettings />
       <button onClick={() => setSelection(null)}>새 항목</button>
       {selection !== undefined && <EntryEditor key={JSON.stringify(selection)} path={selection} close={() => setSelection(undefined)} saved={setSelection} />}
       <EntryFilter />

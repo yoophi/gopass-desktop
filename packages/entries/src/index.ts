@@ -8,3 +8,4 @@ export function filterEntryPaths(paths: readonly string[], term: string): readon
   return query ? paths.filter((path) => path.toLowerCase().includes(query)) : paths;
 }
 export { generatePassword, ratePassword } from "./password";
+export { searchTerms, matchPaths, highlightPath } from "./search";

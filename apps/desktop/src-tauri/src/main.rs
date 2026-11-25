@@ -4,7 +4,20 @@ mod adapters;
 
 fn main() {
     let catalog: adapters::commands::Catalog = std::sync::Arc::new(gopass_cli::GopassCli);
+    use adapters::desktop;
     tauri::Builder::default()
+        .plugin(
+            tauri_plugin_global_shortcut::Builder::new()
+                .with_handler(|app, _, event| {
+                    if event.state == tauri_plugin_global_shortcut::ShortcutState::Pressed {
+                        tauri::async_runtime::spawn(desktop::open_search(app.clone()));
+                    }
+                })
+                .build(),
+        )
+        .plugin(tauri_plugin_autostart::Builder::new().build())
+        .manage(desktop::DesktopState::default())
+        .setup(desktop::setup)
         .manage(catalog)
         .invoke_handler(tauri::generate_handler![
             adapters::commands::list_entries,
@@ -12,7 +25,12 @@ fn main() {
             adapters::commands::copy_entry,
             adapters::commands::save_entry,
             adapters::commands::remove_entry,
-            adapters::commands::entry_history
+            adapters::commands::entry_history,
+            desktop::open_search,
+            desktop::close_search,
+            desktop::desktop_settings,
+            desktop::set_search_shortcut,
+            desktop::set_autostart
         ])
         .run(tauri::generate_context!())
         .expect("failed to run gopass-desktop");
