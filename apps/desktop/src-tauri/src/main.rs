@@ -28,6 +28,7 @@ fn main() {
             desktop::close_search,
             desktop::desktop_settings,
             desktop::set_search_shortcut,
+            desktop::pause_search_shortcut,
             desktop::open_releases,
             desktop::set_autostart
         ])

@@ -53,7 +53,7 @@ pub async fn open_search(app: AppHandle) -> Result<(), String> {
         "search",
         WebviewUrl::App("index.html?view=search".into()),
     )
-    .title("빠른 검색")
+    .title("gopass-desktop")
     .inner_size(560., 410.)
     .center()
     .focused(true)
@@ -100,12 +100,34 @@ fn install_shortcut(app: &AppHandle, value: &str, persist: bool) -> Result<(), S
             return Err(e.to_string());
         }
     }
-    if let Some(old) = *active {
+    if let Some(old) = active.filter(|old| shortcuts.is_registered(*old)) {
         shortcuts.unregister(old).map_err(|e| e.to_string())?;
     }
     *active = Some(next);
     *state.startup_error.lock().unwrap() = None;
     Ok(())
+}
+
+/// The OS swallows a registered shortcut before the webview sees it, so the
+/// settings field releases it while it captures a new key combination.
+#[tauri::command]
+pub fn pause_search_shortcut(app: AppHandle, paused: bool) -> Result<(), String> {
+    let state = app.state::<DesktopState>();
+    let active = state.active_shortcut.lock().unwrap();
+    let (Some(shortcut), Some(shortcuts)) =
+        (*active, app.try_state::<GlobalShortcut<tauri::Wry>>())
+    else {
+        return Ok(());
+    };
+    if paused != shortcuts.is_registered(shortcut) {
+        return Ok(());
+    }
+    if paused {
+        shortcuts.unregister(shortcut)
+    } else {
+        shortcuts.register(shortcut)
+    }
+    .map_err(|e| e.to_string())
 }
 
 #[tauri::command]
