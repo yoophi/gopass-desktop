@@ -117,3 +117,24 @@ pub async fn score_entry(catalog: tauri::State<'_, Catalog>, path: String) -> Re
     })
     .await
 }
+
+#[tauri::command]
+pub async fn generate_password(
+    length: u32,
+    capitals: bool,
+    numerals: bool,
+    symbols: bool,
+    ambiguous: bool,
+) -> Result<String, String> {
+    let options = gopass_cli::PasswordOptions {
+        length,
+        capitals,
+        numerals,
+        symbols,
+        ambiguous,
+    };
+    tauri::async_runtime::spawn_blocking(move || gopass_cli::generate_password(options))
+        .await
+        .map_err(|e| e.to_string())?
+        .map_err(|e| e.to_string())
+}

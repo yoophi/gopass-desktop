@@ -24,6 +24,7 @@ fn main() {
             adapters::commands::sync_stores,
             adapters::commands::diagnose,
             adapters::commands::score_entry,
+            adapters::commands::generate_password,
             desktop::open_search,
             desktop::close_search,
             desktop::desktop_settings,

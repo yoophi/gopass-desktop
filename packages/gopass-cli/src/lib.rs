@@ -203,3 +203,88 @@ impl gopass_core::StoreAdmin for GopassCli {
         Ok(())
     }
 }
+
+#[derive(Clone, Copy)]
+pub struct PasswordOptions {
+    pub length: u32,
+    pub capitals: bool,
+    pub numerals: bool,
+    pub symbols: bool,
+    pub ambiguous: bool,
+}
+
+// Long flags only: gopass reads `-1` as a positional number, not as --one-per-line.
+fn pwgen_args(options: PasswordOptions) -> io::Result<Vec<String>> {
+    if !(6..=200).contains(&options.length) {
+        return Err(io::Error::other("길이는 6~200자로 입력하세요."));
+    }
+    let mut args = vec!["pwgen".to_string(), "--one-per-line".into()];
+    for (flag, on) in [
+        ("--no-capitalize", !options.capitals),
+        ("--no-numerals", !options.numerals),
+        ("--symbols", options.symbols),
+        ("--ambiguous", !options.ambiguous),
+    ] {
+        if on {
+            args.push(flag.into());
+        }
+    }
+    args.extend([options.length.to_string(), "1".into()]);
+    Ok(args)
+}
+
+/// Generates one password with `gopass pwgen`; nothing is written to a store.
+pub fn generate_password(options: PasswordOptions) -> io::Result<String> {
+    let args = pwgen_args(options)?;
+    let args: Vec<&str> = args.iter().map(String::as_str).collect();
+    let output = run(&args, None)?;
+    // Each line ends with one padding space.
+    let line = output.lines().next().unwrap_or_default();
+    Ok(line.strip_suffix(' ').unwrap_or(line).to_string())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn pwgen_args_follow_the_options() {
+        let base = PasswordOptions {
+            length: 20,
+            capitals: true,
+            numerals: true,
+            symbols: false,
+            ambiguous: true,
+        };
+        assert_eq!(
+            pwgen_args(base).unwrap(),
+            ["pwgen", "--one-per-line", "20", "1"]
+        );
+        let strict = PasswordOptions {
+            capitals: false,
+            numerals: false,
+            symbols: true,
+            ambiguous: false,
+            ..base
+        };
+        assert_eq!(
+            pwgen_args(strict).unwrap(),
+            [
+                "pwgen",
+                "--one-per-line",
+                "--no-capitalize",
+                "--no-numerals",
+                "--symbols",
+                "--ambiguous",
+                "20",
+                "1"
+            ]
+        );
+        assert!(pwgen_args(PasswordOptions { length: 5, ..base }).is_err());
+        assert!(pwgen_args(PasswordOptions {
+            length: 201,
+            ..base
+        })
+        .is_err());
+    }
+}
