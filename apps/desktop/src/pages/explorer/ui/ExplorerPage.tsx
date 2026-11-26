@@ -1,44 +1,40 @@
-import { PasswordHealth } from "@/features/password-health";
-import { StoreAdmin } from "@/features/store-admin";
-import { DesktopSettings } from "@/features/desktop-settings";
-import { invoke } from "@tauri-apps/api/core";
-import { EntryTree } from "@/features/browse-entries";
-import { useState } from "react";
-import { EntryEditor } from "@/features/manage-entry";
 import { filterEntryPaths } from "@gopass/entries";
 import { useQuery } from "@tanstack/react-query";
+import { LuKeyRound } from "react-icons/lu";
 import { entryListOptions } from "@/entities/entry";
 import { EntryFilter, useEntryFilter } from "@/features/filter-entries";
+import { hint, plain } from "@/shared/ui/styles";
 
-export function ExplorerPage() {
-  const [selection, setSelection] = useState<string | null | undefined>();
-  const [menuError, setMenuError] = useState("");
+/** Lists every entry below `folder`; an empty folder means the whole store. */
+export function ExplorerPage({ folder, open }: { folder: string; open: (path: string) => void }) {
   const entries = useQuery(entryListOptions);
   const term = useEntryFilter((state) => state.term);
-  const paths = entries.data && filterEntryPaths(entries.data, term);
+  const paths = entries.data && filterEntryPaths(entries.data.filter(path => !folder || path.startsWith(folder + "/")), term);
 
   return (
-    <main className="mx-auto grid max-w-3xl gap-6 p-8">
-      <h1 className="text-3xl font-semibold">저장소 탐색기</h1>
-      <nav><button onClick={() => invoke("open_search").catch(e => setMenuError(String(e)))}>빠른 검색</button></nav>
-      {menuError && <p role="alert">{menuError}</p>}
-      <DesktopSettings />
-      <StoreAdmin />
-      <PasswordHealth paths={entries.data ?? []} open={setSelection} />
-      <button onClick={() => setSelection(null)}>새 항목</button>
-      {selection !== undefined && <EntryEditor key={JSON.stringify(selection)} path={selection} close={() => setSelection(undefined)} saved={setSelection} />}
+    <div className="grid gap-4">
       <EntryFilter />
-      {entries.isPending && <p role="status">목록을 불러오는 중입니다.</p>}
+      {entries.isPending && <p role="status" className={hint}>목록을 불러오는 중입니다.</p>}
       {entries.isError && (
-        <div role="alert">
-          <p>목록을 읽을 수 없습니다. gopass 설치와 저장소 설정을 확인하세요.</p>
-          <button className="mt-2 underline" onClick={() => void entries.refetch()}>다시 시도</button>
+        <div role="alert" className="flex items-center gap-3 rounded-lg border border-input bg-white p-4">
+          <p className="mr-auto text-destructive">목록을 읽을 수 없습니다. gopass 설치와 저장소 설정을 확인하세요.</p>
+          <button className={plain + " shrink-0"} onClick={() => void entries.refetch()}>다시 시도</button>
         </div>
       )}
-      {paths?.length === 0 && <p>{entries.data?.length ? "검색 결과가 없습니다." : "저장소가 비어 있습니다."}</p>}
+      {paths?.length === 0 && <p className={hint}>{entries.data?.length ? "검색 결과가 없습니다." : "저장소가 비어 있습니다."}</p>}
       {paths && paths.length > 0 && (
-        <EntryTree key={JSON.stringify([!!term, paths])} paths={paths} searching={!!term} open={setSelection} />
+        <ul className="divide-y divide-input border-y border-input">
+          {paths.map(path => <li key={path}>
+            <button className="flex w-full items-center gap-3 px-2 py-3 text-left hover:bg-white focus-visible:outline-2" onClick={() => open(path)}>
+              <LuKeyRound aria-hidden className="shrink-0 text-muted-foreground" />
+              <span className="grid min-w-0">
+                <span className="truncate font-semibold text-ring">{path.slice(path.lastIndexOf("/") + 1)}</span>
+                <span className="truncate text-sm text-muted-foreground">{path}</span>
+              </span>
+            </button>
+          </li>)}
+        </ul>
       )}
-    </main>
+    </div>
   );
 }

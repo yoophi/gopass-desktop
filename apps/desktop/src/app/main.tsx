@@ -2,7 +2,7 @@ import { QuickSearch } from "@/pages/quick-search";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { ExplorerPage } from "@/pages/explorer";
+import { App } from "./App";
 import "./styles.css";
 
 const client = new QueryClient();
@@ -12,7 +12,7 @@ const searchWindow = new URLSearchParams(location.search).get("view") === "searc
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <QueryClientProvider client={client}>
-      {searchWindow ? <QuickSearch /> : <ExplorerPage />}
+      {searchWindow ? <QuickSearch /> : <App />}
     </QueryClientProvider>
   </StrictMode>,
 );
