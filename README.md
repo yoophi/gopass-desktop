@@ -28,6 +28,20 @@ cargo build -p gopass-native-host
 node scripts/test-extension.mjs
 ```
 
+## 버전 정책
+
+데스크톱 앱의 릴리스 버전은 CalVer `YYYY.M.PATCH` 형식을 따른다.
+
+| 자리 | 뜻 | 예 |
+|---|---|---|
+| `YYYY` | 릴리스 연도 | `2026` |
+| `M` | 릴리스 월. 앞에 0을 붙이지 않는다 | `11` |
+| `PATCH` | 같은 달 안에서 0부터 올리는 순번 | `0` |
+
+2026년 11월의 첫 릴리스는 `2026.11.0`, 같은 달의 다음 릴리스는 `2026.11.1`이고 태그는 `v2026.11.0`처럼 붙인다. 달이 바뀌면 `PATCH`는 0으로 돌아간다. 이 형식은 SemVer 비교 규칙으로도 순서가 맞아서 앱의 새 버전 확인이 그대로 동작한다.
+
+버전을 올릴 때는 `apps/desktop/package.json`, `apps/desktop/src-tauri/Cargo.toml`, `apps/desktop/src-tauri/tauri.conf.json` 세 곳을 함께 바꾼다.
+
 ## 아키텍처
 
 재사용 가능한 라이브러리는 언어와 관계없이 `packages/*`에 둡니다. `packages/ui`는 공용 React 컴포넌트와 테마를 제공하고, `packages/gopass-core`는 Rust 코어를 제공합니다. 앱은 각 라이브러리의 공개 API를 사용하며 공용 패키지는 앱에 의존하지 않습니다.
